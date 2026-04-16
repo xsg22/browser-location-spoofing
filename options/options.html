@@ -18,7 +18,18 @@
         <div class="card">
             <div class="node-list-header">
                 <h2>可用节点列表</h2>
-                <input type="text" id="search-nodes" class="search-input" placeholder="🔍 搜索名称, IP 或 代码...">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <label id="select-all-wrapper"
+                        style="display: none; cursor: pointer; color: var(--text-muted); font-size: 0.85rem;">
+                        <input type="checkbox" id="select-all-cb"
+                            style="margin-right: 4px; accent-color: var(--primary);"> 全选
+                    </label>
+                    <button id="toggle-batch-mode-btn" class="btn default"
+                        style="padding: 6px 10px; font-size: 0.8rem;">批量管理</button>
+                    <button id="execute-batch-delete-btn" class="btn danger"
+                        style="padding: 6px 10px; font-size: 0.8rem; display: none;">🗑️ 确认删除选中</button>
+                    <input type="text" id="search-nodes" class="search-input" placeholder="🔍 搜索名称, IP 或 代码...">
+                </div>
             </div>
             <p class="subtitle">勾选希望在弹窗中显示的项目。点击 📌 置顶，或使用 ✏️ 编辑信息。</p>
 

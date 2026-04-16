@@ -336,3 +336,22 @@ textarea:focus {
     gap: 12px;
     margin-top: 24px;
 }
+
+/* Batch Mode */
+.batch-delete-cb {
+    display: none;
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    cursor: pointer;
+    accent-color: var(--danger);
+    flex-shrink: 0;
+}
+
+.batch-mode .batch-delete-cb {
+    display: block;
+}
+
+.batch-mode .node-actions .icon-btn {
+    display: none;
+}

@@ -13,26 +13,31 @@ async function updateRules() {
         return;
     }
 
-    const countriesData = allCountries || COUNTRIES;
+    const countriesData = allCountries || [];
     const country = countriesData.find(c => c.id === activeCountry || c.code === activeCountry);
     if (!country) return;
+
+    const requestHeaders = [
+        { header: "X-Forwarded-For", operation: "set", value: country.ip },
+        { header: "X-Real-IP", operation: "set", value: country.ip },
+        { header: "Client-IP", operation: "set", value: country.ip },
+        { header: "X-Client-IP", operation: "set", value: country.ip },
+        { header: "True-Client-IP", operation: "set", value: country.ip },
+        { header: "WL-Proxy-Client-IP", operation: "set", value: country.ip },
+        { header: "Timezone", operation: "set", value: country.timezone },
+        { header: "CF-IPCountry", operation: "set", value: country.code }
+    ];
+
+    if (country.userAgent) {
+        requestHeaders.push({ header: "User-Agent", operation: "set", value: country.userAgent });
+    }
 
     const newRules = [{
         id: RULE_ID,
         priority: 1,
         action: {
             type: "modifyHeaders",
-            requestHeaders: [
-                { header: "X-Forwarded-For", operation: "set", value: country.ip },
-                { header: "X-Real-IP", operation: "set", value: country.ip },
-                { header: "Client-IP", operation: "set", value: country.ip },
-                { header: "X-Client-IP", operation: "set", value: country.ip },
-                { header: "True-Client-IP", operation: "set", value: country.ip },
-                { header: "WL-Proxy-Client-IP", operation: "set", value: country.ip },
-                { header: "Timezone", operation: "set", value: country.timezone },
-                { header: "User-Agent", operation: "set", value: country.userAgent },
-                { header: "CF-IPCountry", operation: "set", value: country.code }
-            ]
+            requestHeaders: requestHeaders
         },
         condition: {
             urlFilter: "*",
@@ -64,9 +69,9 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.get(['enabled', 'activeCountry', 'allCountries', 'visibleCountryCodes'], (result) => {
         const defaultSettings = {};
         if (result.enabled === undefined) defaultSettings.enabled = false;
-        if (result.activeCountry === undefined) defaultSettings.activeCountry = 'US';
-        if (result.allCountries === undefined) defaultSettings.allCountries = COUNTRIES;
-        if (result.visibleCountryCodes === undefined) defaultSettings.visibleCountryCodes = COUNTRIES.map(c => c.id || c.code);
+        if (result.activeCountry === undefined) defaultSettings.activeCountry = '';
+        if (result.allCountries === undefined) defaultSettings.allCountries = [];
+        if (result.visibleCountryCodes === undefined) defaultSettings.visibleCountryCodes = [];
 
         if (Object.keys(defaultSettings).length > 0) {
             chrome.storage.local.set(defaultSettings);

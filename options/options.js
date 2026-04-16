@@ -6,6 +6,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetBtn = document.getElementById('reset-btn');
     const importMsg = document.getElementById('import-msg');
 
+    const toggleBatchModeBtn = document.getElementById('toggle-batch-mode-btn');
+    const executeBatchDeleteBtn = document.getElementById('execute-batch-delete-btn');
+    const selectAllWrapper = document.getElementById('select-all-wrapper');
+    const selectAllCb = document.getElementById('select-all-cb');
+
     // Modal 
     const modal = document.getElementById('edit-modal');
     const closeModalBtn = document.getElementById('close-modal-btn');
@@ -22,17 +27,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     let pinnedIds = [];
     let searchQuery = '';
     let currentEditId = null;
+    let isBatchMode = false;
 
     async function loadData() {
         const res = await chrome.storage.local.get(['allCountries', 'visibleCountryCodes', 'pinnedCountryCodes']);
-        allCountries = res.allCountries || window.COUNTRIES;
+        allCountries = res.allCountries || [];
         // Normalize IDs for legacy configs
         allCountries.forEach(c => {
             if (!c.id) c.id = c.code;
             if (!c.name) c.name = c.code + (c.region ? '-' + c.region : '');
         });
 
-        visibleIds = res.visibleCountryCodes || window.COUNTRIES.map(c => c.id || c.code);
+        visibleIds = res.visibleCountryCodes || [];
         pinnedIds = res.pinnedCountryCodes || [];
         renderList();
     }
@@ -66,12 +72,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             div.className = `node-item ${isPinned ? 'pinned' : ''}`;
 
             div.innerHTML = `
-        <div class="node-info">
-          <span class="node-title">
-            ${country.name}
-            ${isPinned ? '<span class="pin-badge">📌 置顶</span>' : ''}
-          </span>
-          <span class="node-details">IP: ${country.ip} | TZ: ${country.timezone}</span>
+        <div style="display: flex; align-items: center;">
+          <input type="checkbox" class="batch-delete-cb" data-batch-id="${country.id}">
+          <div class="node-info">
+            <span class="node-title">
+              ${country.name} (${country.code})
+              ${isPinned ? '<span class="pin-badge">📌 置顶</span>' : ''}
+            </span>
+            <span class="node-details">IP: ${country.ip} | TZ: ${country.timezone}</span>
+          </div>
         </div>
         <div class="node-actions">
           <button class="icon-btn ${isPinned ? 'active-pin' : ''}" title="置顶" data-action="pin" data-id="${country.id}">📌</button>
@@ -81,8 +90,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       `;
 
-            // Checkbox
-            div.querySelector('input[type="checkbox"]').addEventListener('change', async (e) => {
+            // Checkbox for display
+            div.querySelector('input[data-id]').addEventListener('change', async (e) => {
                 const id = e.target.getAttribute('data-id');
                 if (e.target.checked) {
                     if (!visibleIds.includes(id)) visibleIds.push(id);
@@ -130,6 +139,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderList();
     });
 
+    // Batch Delete Handlers
+    toggleBatchModeBtn.addEventListener('click', () => {
+        isBatchMode = !isBatchMode;
+        nodesList.classList.toggle('batch-mode', isBatchMode);
+        if (isBatchMode) {
+            toggleBatchModeBtn.textContent = '退出管理';
+            executeBatchDeleteBtn.style.display = 'inline-block';
+            selectAllWrapper.style.display = 'inline-flex';
+            selectAllCb.checked = false;
+        } else {
+            toggleBatchModeBtn.textContent = '批量管理';
+            executeBatchDeleteBtn.style.display = 'none';
+            selectAllWrapper.style.display = 'none';
+        }
+    });
+
+    selectAllCb.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+        document.querySelectorAll('.batch-delete-cb').forEach(cb => {
+            cb.checked = isChecked;
+        });
+    });
+
+    executeBatchDeleteBtn.addEventListener('click', async () => {
+        const checkboxes = document.querySelectorAll('.batch-delete-cb:checked');
+        if (checkboxes.length === 0) {
+            showMessage('请先勾选需要删除的节点！', 'error');
+            return;
+        }
+
+        if (await showConfirm('批量删除', `确定要删除选中的 ${checkboxes.length} 个节点吗？`)) {
+            const idsToDelete = Array.from(checkboxes).map(cb => cb.getAttribute('data-batch-id'));
+
+            allCountries = allCountries.filter(c => !idsToDelete.includes(c.id));
+            visibleIds = visibleIds.filter(id => !idsToDelete.includes(id));
+            pinnedIds = pinnedIds.filter(id => !idsToDelete.includes(id));
+
+            await saveAllToStorage();
+
+            // Exit batch mode
+            isBatchMode = false;
+            nodesList.classList.remove('batch-mode');
+            toggleBatchModeBtn.textContent = '批量管理';
+            executeBatchDeleteBtn.style.display = 'none';
+            selectAllWrapper.style.display = 'none';
+
+            showMessage(`成功删除了 ${idsToDelete.length} 个节点`, 'success');
+            renderList();
+        }
+    });
+
+
     async function saveAllToStorage() {
         await chrome.storage.local.set({
             allCountries,
@@ -169,7 +230,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             allCountries[idx].timezone = finalTz || 'UTC';
 
-            if (editUa.value) allCountries[idx].userAgent = editUa.value;
+            if (editUa.value) {
+                allCountries[idx].userAgent = editUa.value;
+            } else {
+                delete allCountries[idx].userAgent;
+            }
 
             await saveAllToStorage();
             renderList();
@@ -190,8 +255,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             parsed.forEach(newItem => {
                 if (!newItem.code || !newItem.ip) return;
 
-                if (!newItem.name) {
-                    newItem.name = newItem.code + (newItem.region ? '-' + newItem.region : '');
+                if (!newItem.name || COUNTRIES.some(c => c.name === newItem.name)) {
+                    const defaultCountry = COUNTRIES.find(c => c.code === newItem.code);
+                    const baseName = defaultCountry ? defaultCountry.name : newItem.code;
+                    newItem.name = baseName + (newItem.region ? '-' + newItem.region : '');
                 }
 
                 if (!newItem.timezone && window.inferTimezone) {
@@ -228,14 +295,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     resetBtn.addEventListener('click', async () => {
-        if (await showConfirm('恢复默认', '确定要恢复默认配置吗？这会清除所有自定义导入的节点！')) {
-            allCountries = window.COUNTRIES;
-            visibleIds = allCountries.map(c => c.id);
+        if (await showConfirm('恢复默认', '确定要清空所有数据吗？这会清除所有的节点！')) {
+            allCountries = [];
+            visibleIds = [];
             pinnedIds = [];
             await saveAllToStorage();
-            await chrome.storage.local.set({ activeCountry: 'US' });
+            await chrome.storage.local.set({ activeCountry: '' });
 
-            showMessage('已重置为默认节点！', 'success');
+            showMessage('已清空列表！', 'success');
             renderList();
         }
     });

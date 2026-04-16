@@ -33,11 +33,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         'enabled', 'activeCountry', 'allCountries', 'visibleCountryCodes', 'pinnedCountryCodes'
     ]);
 
-    allCountries = result.allCountries || window.COUNTRIES;
+    allCountries = result.allCountries || COUNTRIES;
     // Fallback map ids if purely legacy
     allCountries.forEach(c => { if (!c.id) c.id = c.code; });
 
-    const visibleIds = result.visibleCountryCodes || window.COUNTRIES.map(c => c.id);
+    const visibleIds = result.visibleCountryCodes || COUNTRIES.map(c => c.id);
     pinnedIds = result.pinnedCountryCodes || [];
 
     displayableCountries = allCountries.filter(c => visibleIds.includes(c.id));

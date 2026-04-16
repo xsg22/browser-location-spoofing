@@ -6,6 +6,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetBtn = document.getElementById('reset-btn');
     const importMsg = document.getElementById('import-msg');
 
+    const openImportModalBtn = document.getElementById('open-import-modal-btn');
+    const closeImportModalBtn = document.getElementById('close-import-modal-btn');
+    const importModal = document.getElementById('import-modal');
+
     const toggleBatchModeBtn = document.getElementById('toggle-batch-mode-btn');
     const executeBatchDeleteBtn = document.getElementById('execute-batch-delete-btn');
     const selectAllWrapper = document.getElementById('select-all-wrapper');
@@ -71,22 +75,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             const div = document.createElement('div');
             div.className = `node-item ${isPinned ? 'pinned' : ''}`;
 
+            const pinSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.68V7a4 4 0 0 0-8 0v3.76z"/></svg>`;
+            const editSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>`;
+            const delSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`;
+
             div.innerHTML = `
-        <div style="display: flex; align-items: center;">
-          <input type="checkbox" class="batch-delete-cb" data-batch-id="${country.id}">
+        <div class="node-info-wrapper">
+          <input type="checkbox" class="custom-checkbox batch-delete-cb danger-cb" data-batch-id="${country.id}">
           <div class="node-info">
             <span class="node-title">
-              ${country.name} (${country.code})
-              ${isPinned ? '<span class="pin-badge">📌 置顶</span>' : ''}
+              ${country.name} <span style="color:var(--text-muted); font-weight:500;">(${country.code})</span>
+              ${isPinned ? `<span class="pin-icon" title="已置顶">${pinSvg}</span>` : ''}
             </span>
-            <span class="node-details">IP: ${country.ip} | TZ: ${country.timezone}</span>
+            <span class="node-details">IP: ${country.ip} <span style="color:#d1d5db; margin:0 6px;">|</span> TZ: ${country.timezone}</span>
           </div>
         </div>
         <div class="node-actions">
-          <button class="icon-btn ${isPinned ? 'active-pin' : ''}" title="置顶" data-action="pin" data-id="${country.id}">📌</button>
-          <button class="icon-btn" title="编辑" data-action="edit" data-id="${country.id}">✏️</button>
-          <button class="icon-btn danger-hover" title="删除" data-action="delete" data-id="${country.id}">🗑️</button>
-          <input type="checkbox" title="是否启用" data-id="${country.id}" ${isVisible ? 'checked' : ''}>
+          <button class="icon-btn ${isPinned ? 'active-pin' : ''}" title="置顶首屏" data-action="pin" data-id="${country.id}">
+             ${pinSvg}
+          </button>
+          <button class="icon-btn" title="编辑信息" data-action="edit" data-id="${country.id}">
+             ${editSvg}
+          </button>
+          <button class="icon-btn danger-hover" title="彻底删除" data-action="delete" data-id="${country.id}">
+             ${delSvg}
+          </button>
+          <div style="width: 1px; height: 24px; background: var(--border-color); margin: 0 4px;"></div>
+          <input type="checkbox" class="custom-checkbox" title="开启在弹窗的显示" data-id="${country.id}" ${isVisible ? 'checked' : ''}>
         </div>
       `;
 
@@ -144,12 +159,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         isBatchMode = !isBatchMode;
         nodesList.classList.toggle('batch-mode', isBatchMode);
         if (isBatchMode) {
-            toggleBatchModeBtn.textContent = '退出管理';
-            executeBatchDeleteBtn.style.display = 'inline-block';
+            toggleBatchModeBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> 退出管理`;
+            executeBatchDeleteBtn.style.display = 'inline-flex';
             selectAllWrapper.style.display = 'inline-flex';
             selectAllCb.checked = false;
         } else {
-            toggleBatchModeBtn.textContent = '批量管理';
+            toggleBatchModeBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> 批量管理`;
             executeBatchDeleteBtn.style.display = 'none';
             selectAllWrapper.style.display = 'none';
         }
@@ -181,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Exit batch mode
             isBatchMode = false;
             nodesList.classList.remove('batch-mode');
-            toggleBatchModeBtn.textContent = '批量管理';
+            toggleBatchModeBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> 批量管理`;
             executeBatchDeleteBtn.style.display = 'none';
             selectAllWrapper.style.display = 'none';
 
@@ -189,7 +204,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderList();
         }
     });
-
 
     async function saveAllToStorage() {
         await chrome.storage.local.set({
@@ -199,7 +213,73 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Edit logic
+    // --- Import Modal Handlers ---
+    openImportModalBtn.addEventListener('click', () => {
+        importArea.value = '';
+        importMsg.textContent = '';
+        importModal.classList.add('open');
+    });
+
+    closeImportModalBtn.addEventListener('click', () => {
+        importModal.classList.remove('open');
+    });
+
+    importBtn.addEventListener('click', async () => {
+        try {
+            const val = importArea.value.trim();
+            if (!val) throw new Error("内容不能为空");
+
+            const parsed = JSON.parse(val);
+            if (!Array.isArray(parsed)) throw new Error("必须是一个 JSON 数组格式");
+
+            let added = 0;
+            parsed.forEach(newItem => {
+                if (!newItem.code || !newItem.ip) return;
+
+                if (!newItem.name || COUNTRIES.some(c => c.name === newItem.name)) {
+                    const defaultCountry = COUNTRIES.find(c => c.code === newItem.code);
+                    const baseName = defaultCountry ? defaultCountry.name : newItem.code;
+                    newItem.name = baseName + (newItem.region ? '-' + newItem.region : '');
+                }
+
+                if (!newItem.timezone && window.inferTimezone) {
+                    newItem.timezone = window.inferTimezone(newItem.code, newItem.region) || 'UTC';
+                }
+
+                if (!newItem.timezone) return;
+
+                if (!newItem.id) {
+                    newItem.id = newItem.code + '_' + (newItem.region || '').replace(/\s+/g, '_') + '_' + Math.random().toString(36).substr(2, 4);
+                }
+
+                const existingIdx = allCountries.findIndex(c => c.id === newItem.id);
+                if (existingIdx !== -1) {
+                    allCountries[existingIdx] = { ...allCountries[existingIdx], ...newItem };
+                } else {
+                    allCountries.push(newItem);
+                }
+
+                if (!visibleIds.includes(newItem.id)) visibleIds.push(newItem.id);
+                added++;
+            });
+
+            if (added === 0) throw new Error("没有找到有效的节点数据(需包含code, ip, (timezone或支持推导的region))");
+
+            await saveAllToStorage();
+
+            importMsg.textContent = `成功导入/更新了 ${added} 个节点！`;
+            importMsg.className = `msg success`;
+            renderList();
+            setTimeout(() => {
+                importModal.classList.remove('open');
+            }, 1000);
+        } catch (err) {
+            importMsg.textContent = `导入失败: ${err.message}`;
+            importMsg.className = `msg error`;
+        }
+    });
+
+    // --- Edit Modal Handlers ---
     function openModal(country) {
         currentEditId = country.id;
         editCode.value = country.code;
@@ -239,81 +319,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveAllToStorage();
             renderList();
             modal.classList.remove('open');
-            showMessage(`成功更新节点`, 'success');
-        }
-    });
-
-    importBtn.addEventListener('click', async () => {
-        try {
-            const val = importArea.value.trim();
-            if (!val) throw new Error("内容不能为空");
-
-            const parsed = JSON.parse(val);
-            if (!Array.isArray(parsed)) throw new Error("必须是一个 JSON 数组格式");
-
-            let added = 0;
-            parsed.forEach(newItem => {
-                if (!newItem.code || !newItem.ip) return;
-
-                if (!newItem.name || COUNTRIES.some(c => c.name === newItem.name)) {
-                    const defaultCountry = COUNTRIES.find(c => c.code === newItem.code);
-                    const baseName = defaultCountry ? defaultCountry.name : newItem.code;
-                    newItem.name = baseName + (newItem.region ? '-' + newItem.region : '');
-                }
-
-                if (!newItem.timezone && window.inferTimezone) {
-                    newItem.timezone = window.inferTimezone(newItem.code, newItem.region) || 'UTC';
-                }
-
-                if (!newItem.timezone) return;
-
-                // Ensure unique ID for imported nodes
-                if (!newItem.id) {
-                    newItem.id = newItem.code + '_' + (newItem.region || '').replace(/\s+/g, '_') + '_' + Math.random().toString(36).substr(2, 4);
-                }
-
-                const existingIdx = allCountries.findIndex(c => c.id === newItem.id);
-                if (existingIdx !== -1) {
-                    allCountries[existingIdx] = { ...allCountries[existingIdx], ...newItem };
-                } else {
-                    allCountries.push(newItem);
-                }
-
-                if (!visibleIds.includes(newItem.id)) visibleIds.push(newItem.id);
-                added++;
-            });
-
-            if (added === 0) throw new Error("没有找到有效的节点数据(需包含code, ip, (timezone或支持推导的region))");
-
-            await saveAllToStorage();
-            showMessage(`成功导入/更新了 ${added} 个节点！`, 'success');
-            importArea.value = '';
-            renderList();
-        } catch (err) {
-            showMessage(`导入失败: ${err.message}`, 'error');
+            // Using alert toast mechanism instead of permanent text
+            alert(`成功更新节点`);
         }
     });
 
     resetBtn.addEventListener('click', async () => {
-        if (await showConfirm('恢复默认', '确定要清空所有数据吗？这会清除所有的节点！')) {
+        if (await showConfirm('清空列表', '确定要清空所有数据吗？这会清除所有的节点！')) {
             allCountries = [];
             visibleIds = [];
             pinnedIds = [];
             await saveAllToStorage();
             await chrome.storage.local.set({ activeCountry: '' });
-
-            showMessage('已清空列表！', 'success');
             renderList();
         }
     });
 
     function showMessage(msg, type) {
-        importMsg.textContent = msg;
-        importMsg.className = `msg ${type}`;
-        setTimeout(() => {
-            importMsg.textContent = '';
-            importMsg.className = 'msg';
-        }, 4000);
+        // Global message handling currently relying on alert/toasts in new UI
     }
 
     // Custom Confirm Dialog

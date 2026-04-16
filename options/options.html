@@ -3,60 +3,98 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>设置 - Location Simulator</title>
+    <title>位置模拟器 高级配置</title>
     <link rel="stylesheet" href="options.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div class="container">
-        <header>
-            <h1>🌍 位置模拟器配置</h1>
-            <p>管理您的国家节点预设，或者导入属于自己的 JSON 节点信息。</p>
+        <header class="app-header">
+            <div class="app-logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path
+                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                    </path>
+                </svg>
+            </div>
+            <div class="app-title">
+                <h1>位置模拟器配置</h1>
+                <p>管理您的国家节点预设，构建属于您业务的高级环境库。</p>
+            </div>
         </header>
 
         <div class="card">
-            <div class="node-list-header">
-                <h2>可用节点列表</h2>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <label id="select-all-wrapper"
-                        style="display: none; cursor: pointer; color: var(--text-muted); font-size: 0.85rem;">
-                        <input type="checkbox" id="select-all-cb"
-                            style="margin-right: 4px; accent-color: var(--primary);"> 全选
-                    </label>
-                    <button id="toggle-batch-mode-btn" class="btn default"
-                        style="padding: 6px 10px; font-size: 0.8rem;">批量管理</button>
-                    <button id="execute-batch-delete-btn" class="btn danger"
-                        style="padding: 6px 10px; font-size: 0.8rem; display: none;">🗑️ 确认删除选中</button>
-                    <input type="text" id="search-nodes" class="search-input" placeholder="🔍 搜索名称, IP 或 代码...">
+            <div class="card-header">
+                <div class="card-header-top">
+                    <h2>可用节点列表</h2>
                 </div>
             </div>
-            <p class="subtitle">勾选希望在弹窗中显示的项目。点击 📌 置顶，或使用 ✏️ 编辑信息。</p>
 
-            <div class="list-container" id="nodes-list">
-                <!-- JS dynamically renders options here -->
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <button id="open-import-modal-btn" class="btn primary">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        导入配置
+                    </button>
+                    <button id="toggle-batch-mode-btn" class="btn default">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                            <polyline points="16 6 12 2 8 6"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                        </svg>
+                        批量管理
+                    </button>
+                    <button id="reset-btn" class="btn danger outline">
+                        清空列表
+                    </button>
+                    <label id="select-all-wrapper"
+                        style="display: none; cursor: pointer; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-main); font-weight: 500;">
+                        <input type="checkbox" id="select-all-cb" class="custom-checkbox danger-cb"> 全选
+                    </label>
+                    <button id="execute-batch-delete-btn" class="btn danger" style="display: none;">
+                        删除选中
+                    </button>
+                </div>
+                <div class="toolbar-right">
+                    <input type="text" id="search-nodes" class="search-input" placeholder="搜索名称或代码...">
+                </div>
+            </div>
+
+            <div id="nodes-list" class="list-container">
+                <!-- Data pops here -->
             </div>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>批量导入配置</h2>
-            <p class="subtitle">通过 JSON 格式导入新的节点（注意这会追加或合并到当前列表）。</p>
-
-            <textarea id="import-area" placeholder='[
+    <!-- Import Modal -->
+    <div id="import-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>批量导入节点</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 12px; margin-top:-16px;">通过 JSON
+                格式导入新的节点（追加或合并）。</p>
+            <textarea id="import-area" style="height: 180px; font-size:0.85rem;" placeholder='[
   {
     "code": "US",
     "name": "安克雷奇节点",
     "region": "Anchorage",
     "ip": "50.18.142.77",
-    "userAgent": "Mozilla/5.0..."
+    "userAgent": "Mozilla/"
   }
 ]'></textarea>
-
-            <div class="actions">
-                <button id="import-btn" class="btn primary">解析并导入</button>
-                <button id="reset-btn" class="btn danger">重置为默认</button>
-            </div>
             <div id="import-msg" class="msg"></div>
+            <div class="modal-actions" style="margin-top: 16px;">
+                <button id="import-btn" class="btn primary">确认导入</button>
+                <button id="close-import-modal-btn" class="btn default">取消</button>
+            </div>
         </div>
     </div>
 
@@ -65,31 +103,31 @@
         <div class="modal-content">
             <h3>编辑节点信息</h3>
             <div class="form-group">
-                <label>国家代码 (Code)</label>
+                <label>国家代码 (Code / 不可改)</label>
                 <input type="text" id="edit-code" disabled>
             </div>
             <div class="form-group">
-                <label>名称 (Name)</label>
+                <label>呈现名称 (Name)</label>
                 <input type="text" id="edit-name">
             </div>
             <div class="form-group">
-                <label>地区 (Region / 省州代码)</label>
-                <input type="text" id="edit-region" placeholder="例如 CA, NY 等（选填）">
+                <label>辅助地区 (Region)</label>
+                <input type="text" id="edit-region" placeholder="如 California 等（选填）">
             </div>
             <div class="form-group">
                 <label>伪装 IP</label>
                 <input type="text" id="edit-ip">
             </div>
             <div class="form-group">
-                <label>时区 (Timezone)</label>
-                <input type="text" id="edit-timezone">
+                <label>伪装时区 (与 IANA 标准一致)</label>
+                <input type="text" id="edit-timezone" placeholder="如 Europe/London">
             </div>
             <div class="form-group">
-                <label>User-Agent (选填)</label>
-                <input type="text" id="edit-ua">
+                <label>覆写 User-Agent (选填)</label>
+                <input type="text" id="edit-ua" placeholder="如需模拟特定设备请填入">
             </div>
             <div class="modal-actions">
-                <button id="save-edit-btn" class="btn primary">保存</button>
+                <button id="save-edit-btn" class="btn primary">保存更改</button>
                 <button id="close-modal-btn" class="btn default">取消</button>
             </div>
         </div>
@@ -98,11 +136,11 @@
     <!-- Confirm Modal -->
     <div id="confirm-modal" class="modal">
         <div class="modal-content">
-            <h3 id="confirm-title">确认操作</h3>
-            <p id="confirm-msg" style="color: var(--text-muted); margin-bottom: 20px; line-height: 1.5;">您确定要执行该操作吗？</p>
+            <h3 id="confirm-title" style="color: var(--danger);">确认操作</h3>
+            <p id="confirm-msg" style="color: var(--text-muted); margin-bottom: 24px; line-height: 1.6;">您确定要执行该操作吗？</p>
             <div class="modal-actions">
-                <button id="confirm-yes-btn" class="btn danger">确定</button>
-                <button id="confirm-no-btn" class="btn default">取消</button>
+                <button id="confirm-yes-btn" class="btn danger">确定执行</button>
+                <button id="confirm-no-btn" class="btn default">暂不</button>
             </div>
         </div>
     </div>

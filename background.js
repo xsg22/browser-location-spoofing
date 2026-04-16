@@ -73,16 +73,28 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 
 // Initial setup
 chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.local.get(['enabled', 'activeCountry', 'allCountries', 'visibleCountryCodes'], (result) => {
+    chrome.storage.local.get(['enabled', 'activeCountry', 'allCountries', 'visibleCountryCodes', 'isInitialized'], async (result) => {
         const defaultSettings = {};
         if (result.enabled === undefined) defaultSettings.enabled = false;
         if (result.activeCountry === undefined) defaultSettings.activeCountry = '';
-        if (result.allCountries === undefined) defaultSettings.allCountries = [];
-        if (result.visibleCountryCodes === undefined) defaultSettings.visibleCountryCodes = [];
+
+        if (!result.isInitialized) {
+            defaultSettings.isInitialized = true;
+            try {
+                const response = await fetch(chrome.runtime.getURL('data/default_location_nodes.json'));
+                const defaultNodes = await response.json();
+                defaultSettings.allCountries = defaultNodes;
+                defaultSettings.visibleCountryCodes = defaultNodes.map(n => n.id);
+            } catch (e) {
+                console.error("Failed to load default nodes", e);
+                defaultSettings.allCountries = [];
+                defaultSettings.visibleCountryCodes = [];
+            }
+        }
 
         if (Object.keys(defaultSettings).length > 0) {
-            chrome.storage.local.set(defaultSettings);
+            await chrome.storage.local.set(defaultSettings);
         }
+        updateRules();
     });
-    updateRules();
 });

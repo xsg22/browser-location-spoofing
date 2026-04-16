@@ -1,8 +1,6 @@
 // popup.js
 document.addEventListener('DOMContentLoaded', async () => {
     const togglePower = document.getElementById('toggle-power');
-    const statusCard = document.getElementById('status-card');
-    const statusText = document.getElementById('status-text');
     const detailIp = document.getElementById('detail-ip');
     const detailTimezone = document.getElementById('detail-timezone');
     const settingsBtn = document.getElementById('settings-btn');
@@ -14,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const popupSearch = document.getElementById('popup-search');
     const dropdownList = document.getElementById('dropdown-list');
     const dropdownArrow = document.getElementById('dropdown-arrow');
+    const mainNodeLabel = document.getElementById('main-node-label');
 
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
@@ -110,8 +109,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectedCountryText.textContent = `${info.name} (${info.code})`;
 
         if (enabled) {
-            statusCard.classList.add('active');
-            statusText.textContent = `正在模拟：${info.name}`;
+            mainNodeLabel.innerHTML = `<span style="color: var(--success); display: inline-block; margin-right: 6px; font-size: 1.1em; filter: drop-shadow(0 0 4px rgba(52, 199, 89, 0.4));">●</span> 正在模拟该节点`;
+            dropdownHeader.classList.add('active-mode');
 
             detailTimezone.innerHTML = `<span class="detail-value">${info.timezone}</span>`;
 
@@ -136,11 +135,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         } else {
-            statusCard.classList.remove('active');
-            statusText.textContent = '模拟器已关闭';
+            mainNodeLabel.innerHTML = `当前选择节点 <span style="color: var(--text-muted); font-weight: normal; margin-left: 6px;">(未开启)</span>`;
+            dropdownHeader.classList.remove('active-mode');
 
-            detailIp.innerHTML = '<span class="detail-value inactive">--</span>';
-            detailTimezone.innerHTML = '<span class="detail-value inactive">--</span>';
+            detailTimezone.innerHTML = `<span class="detail-value inactive">${info.timezone}</span>`;
+
+            if (Array.isArray(info.ip) && info.ip.length > 1) {
+                let optionsHtml = info.ip.map(ip => `<option value="${ip}">${ip}</option>`).join('');
+                // Dropdown is inactive
+                detailIp.innerHTML = `<select disabled class="ip-selector inactive" style="appearance: none; border-radius: 6px; padding: 4px 22px 4px 8px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.8rem; font-weight: 600; cursor: not-allowed; background-image: none; outline: none;">${optionsHtml}</select>`;
+            } else {
+                let singleIp = Array.isArray(info.ip) ? (info.ip[0] || '--') : (info.ip || '--');
+                detailIp.innerHTML = `<span class="detail-value inactive">${singleIp}</span>`;
+            }
         }
     }
 

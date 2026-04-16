@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${country.name} <span style="color:var(--text-muted); font-weight:500;">(${country.code})</span>
               ${isPinned ? `<span class="pin-icon" title="已置顶">${pinSvg}</span>` : ''}
             </span>
-            <span class="node-details">IP: ${country.ip.join(', ')} <span style="color:#d1d5db; margin:0 6px;">|</span> TZ: ${country.timezone}</span>
+            <span class="node-details">IP: ${country.ip && country.ip.length ? country.ip.join(', ') : '--'} <span style="color:#d1d5db; margin:0 6px;">|</span> TZ: ${country.timezone || '--'}</span>
           </div>
         </div>
         <div class="node-actions">

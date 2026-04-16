@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             mainNodeLabel.innerHTML = `<span style="color: var(--success); display: inline-block; margin-right: 6px; font-size: 1.1em; filter: drop-shadow(0 0 4px rgba(52, 199, 89, 0.4));">●</span> 正在模拟该节点`;
             dropdownHeader.classList.add('active-mode');
 
-            detailTimezone.innerHTML = `<span class="detail-value">${info.timezone}</span>`;
+            detailTimezone.innerHTML = `<span class="detail-value">${info.timezone || '--'}</span>`;
 
             if (Array.isArray(info.ip) && info.ip.length > 1) {
                 if (!info.ip.includes(activeIp)) {
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             mainNodeLabel.innerHTML = `当前选择节点 <span style="color: var(--text-muted); font-weight: normal; margin-left: 6px;">(未开启)</span>`;
             dropdownHeader.classList.remove('active-mode');
 
-            detailTimezone.innerHTML = `<span class="detail-value inactive">${info.timezone}</span>`;
+            detailTimezone.innerHTML = `<span class="detail-value inactive">${info.timezone || '--'}</span>`;
 
             if (Array.isArray(info.ip) && info.ip.length > 1) {
                 let optionsHtml = info.ip.map(ip => `<option value="${ip}">${ip}</option>`).join('');

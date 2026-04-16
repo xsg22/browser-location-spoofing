@@ -29,8 +29,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let pinnedIds = [];
     let searchQuery = '';
 
+    let activeIp = '';
+
     const result = await chrome.storage.local.get([
-        'enabled', 'activeCountry', 'allCountries', 'visibleCountryCodes', 'pinnedCountryCodes'
+        'enabled', 'activeCountry', 'activeIp', 'allCountries', 'visibleCountryCodes', 'pinnedCountryCodes'
     ]);
 
     allCountries = result.allCountries || COUNTRIES;
@@ -46,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         togglePower.checked = true;
     }
 
+    activeIp = result.activeIp || '';
     activeCountryId = result.activeCountry;
     if (!visibleIds.includes(activeCountryId) && visibleIds.length > 0) {
         activeCountryId = visibleIds[0];
@@ -84,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.className = `dd-item ${c.id === activeCountryId ? 'selected' : ''}`;
 
             const pinBadge = isPinned ? ' <span style="font-size:0.75rem" title="已置顶">📌</span>' : '';
-            item.innerHTML = `<span class="dd-name">${c.name} (${c.code})${pinBadge}</span>`;
+            item.innerHTML = `<span class="dd-name">${c.name} <span style="font-size: 0.8em; color: var(--text-muted)">(${c.code})</span>${pinBadge}</span>`;
 
             item.addEventListener('click', async () => {
                 activeCountryId = c.id;
@@ -110,14 +113,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             statusCard.classList.add('active');
             statusText.textContent = `正在模拟：${info.name}`;
 
-            detailIp.textContent = info.ip;
-            detailTimezone.textContent = info.timezone;
+            detailTimezone.innerHTML = `<span class="detail-value">${info.timezone}</span>`;
+
+            if (Array.isArray(info.ip) && info.ip.length > 1) {
+                if (!info.ip.includes(activeIp)) {
+                    activeIp = info.ip[0];
+                    chrome.storage.local.set({ activeIp });
+                }
+                let optionsHtml = info.ip.map(ip => `<option value="${ip}" ${ip === activeIp ? 'selected' : ''}>${ip}</option>`).join('');
+                detailIp.innerHTML = `<select id="ip-select" class="ip-selector" style="appearance: none; background: rgba(0, 102, 255, 0.08); border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 22px 4px 8px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.8rem; color: var(--primary); font-weight: 600; cursor: pointer; background-image: url(&quot;data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%230066ff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E&quot;); background-repeat: no-repeat; background-position: right 6px center; outline: none;">${optionsHtml}</select>`;
+
+                document.getElementById('ip-select').addEventListener('change', async (e) => {
+                    activeIp = e.target.value;
+                    await chrome.storage.local.set({ activeIp });
+                });
+            } else {
+                let singleIp = Array.isArray(info.ip) ? (info.ip[0] || '--') : (info.ip || '--');
+                detailIp.innerHTML = `<span class="detail-value">${singleIp}</span>`;
+                if (activeIp !== singleIp) {
+                    activeIp = singleIp;
+                    chrome.storage.local.set({ activeIp });
+                }
+            }
         } else {
             statusCard.classList.remove('active');
             statusText.textContent = '模拟器已关闭';
 
-            detailIp.textContent = '--';
-            detailTimezone.textContent = '--';
+            detailIp.innerHTML = '<span class="detail-value inactive">--</span>';
+            detailTimezone.innerHTML = '<span class="detail-value inactive">--</span>';
         }
     }
 

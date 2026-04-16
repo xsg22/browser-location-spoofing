@@ -36,10 +36,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadData() {
         const res = await chrome.storage.local.get(['allCountries', 'visibleCountryCodes', 'pinnedCountryCodes']);
         allCountries = res.allCountries || [];
-        // Normalize IDs for legacy configs
         allCountries.forEach(c => {
             if (!c.id) c.id = c.code;
             if (!c.name) c.name = c.code + (c.region ? '-' + c.region : '');
+            if (typeof c.ip === 'string') {
+                c.ip = c.ip.split(',').map(s => s.trim()).filter(Boolean);
+            }
+            if (!c.ip) c.ip = [];
         });
 
         visibleIds = res.visibleCountryCodes || [];
@@ -56,8 +59,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const q = searchQuery.toLowerCase();
             displayList = displayList.filter(c =>
                 c.name.toLowerCase().includes(q) ||
+                c.name.toLowerCase().includes(q) ||
                 c.code.toLowerCase().includes(q) ||
-                c.ip.includes(q) ||
+                (c.ip && c.ip.some(i => i.includes(q))) ||
                 (c.region && c.region.toLowerCase().includes(q))
             );
         }
@@ -87,7 +91,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${country.name} <span style="color:var(--text-muted); font-weight:500;">(${country.code})</span>
               ${isPinned ? `<span class="pin-icon" title="已置顶">${pinSvg}</span>` : ''}
             </span>
-            <span class="node-details">IP: ${country.ip} <span style="color:#d1d5db; margin:0 6px;">|</span> TZ: ${country.timezone}</span>
+            <span class="node-details">IP: ${country.ip.join(', ')} <span style="color:#d1d5db; margin:0 6px;">|</span> TZ: ${country.timezone}</span>
           </div>
         </div>
         <div class="node-actions">
@@ -236,6 +240,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             parsed.forEach(newItem => {
                 if (!newItem.code || !newItem.ip) return;
 
+                if (typeof newItem.ip === 'string') {
+                    newItem.ip = newItem.ip.split(',').map(s => s.trim()).filter(Boolean);
+                }
+
                 if (!newItem.name || COUNTRIES.some(c => c.name === newItem.name)) {
                     const defaultCountry = COUNTRIES.find(c => c.code === newItem.code);
                     const baseName = defaultCountry ? defaultCountry.name : newItem.code;
@@ -285,7 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         editCode.value = country.code;
         editName.value = country.name;
         editRegion.value = country.region || '';
-        editIp.value = country.ip;
+        editIp.value = (country.ip && Array.isArray(country.ip)) ? country.ip.join(', ') : (country.ip || '');
         editTimezone.value = country.timezone;
         editUa.value = country.userAgent || '';
         modal.classList.add('open');
@@ -302,7 +310,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (idx !== -1) {
             allCountries[idx].name = editName.value;
             allCountries[idx].region = editRegion.value || undefined;
-            allCountries[idx].ip = editIp.value;
+            allCountries[idx].ip = editIp.value.split(',').map(s => s.trim()).filter(Boolean);
 
             let finalTz = editTimezone.value.trim();
             if (!finalTz && window.inferTimezone) {

@@ -3,7 +3,7 @@ importScripts('shared/countries.js');
 const RULE_ID = 1;
 
 async function updateRules() {
-    const { enabled, activeCountry, allCountries } = await chrome.storage.local.get(['enabled', 'activeCountry', 'allCountries']);
+    const { enabled, activeCountry, activeIp, allCountries } = await chrome.storage.local.get(['enabled', 'activeCountry', 'activeIp', 'allCountries']);
 
     if (!enabled || !activeCountry) {
         // Remove all rules if disabled or no country selected
@@ -17,13 +17,20 @@ async function updateRules() {
     const country = countriesData.find(c => c.id === activeCountry || c.code === activeCountry);
     if (!country) return;
 
+    let targetIp = '';
+    if (Array.isArray(country.ip)) {
+        targetIp = (activeIp && country.ip.includes(activeIp)) ? activeIp : (country.ip[0] || '');
+    } else {
+        targetIp = country.ip || '';
+    }
+
     const requestHeaders = [
-        { header: "X-Forwarded-For", operation: "set", value: country.ip },
-        { header: "X-Real-IP", operation: "set", value: country.ip },
-        { header: "Client-IP", operation: "set", value: country.ip },
-        { header: "X-Client-IP", operation: "set", value: country.ip },
-        { header: "True-Client-IP", operation: "set", value: country.ip },
-        { header: "WL-Proxy-Client-IP", operation: "set", value: country.ip },
+        { header: "X-Forwarded-For", operation: "set", value: targetIp },
+        { header: "X-Real-IP", operation: "set", value: targetIp },
+        { header: "Client-IP", operation: "set", value: targetIp },
+        { header: "X-Client-IP", operation: "set", value: targetIp },
+        { header: "True-Client-IP", operation: "set", value: targetIp },
+        { header: "WL-Proxy-Client-IP", operation: "set", value: targetIp },
         { header: "Timezone", operation: "set", value: country.timezone },
         { header: "CF-IPCountry", operation: "set", value: country.code }
     ];
@@ -59,7 +66,7 @@ async function updateRules() {
 
 // Listen to storage changes
 chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === 'local' && (changes.enabled || changes.activeCountry || changes.allCountries)) {
+    if (namespace === 'local' && (changes.enabled || changes.activeCountry || changes.activeIp || changes.allCountries)) {
         updateRules();
     }
 });

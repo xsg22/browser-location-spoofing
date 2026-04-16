@@ -24,16 +24,24 @@ async function updateRules() {
         targetIp = country.ip || '';
     }
 
-    const requestHeaders = [
-        { header: "X-Forwarded-For", operation: "set", value: targetIp },
-        { header: "X-Real-IP", operation: "set", value: targetIp },
-        { header: "Client-IP", operation: "set", value: targetIp },
-        { header: "X-Client-IP", operation: "set", value: targetIp },
-        { header: "True-Client-IP", operation: "set", value: targetIp },
-        { header: "WL-Proxy-Client-IP", operation: "set", value: targetIp },
-        { header: "Timezone", operation: "set", value: country.timezone },
-        { header: "CF-IPCountry", operation: "set", value: country.code }
-    ];
+    const requestHeaders = [];
+
+    // Only inject IP headers when an IP is actually configured
+    if (targetIp) {
+        requestHeaders.push(
+            { header: "X-Forwarded-For", operation: "set", value: targetIp },
+            { header: "X-Real-IP", operation: "set", value: targetIp },
+            { header: "Client-IP", operation: "set", value: targetIp },
+            { header: "X-Client-IP", operation: "set", value: targetIp },
+            { header: "True-Client-IP", operation: "set", value: targetIp },
+            { header: "WL-Proxy-Client-IP", operation: "set", value: targetIp }
+        );
+    }
+
+    if (country.timezone) {
+        requestHeaders.push({ header: "Timezone", operation: "set", value: country.timezone });
+    }
+    requestHeaders.push({ header: "CF-IPCountry", operation: "set", value: country.code });
 
     if (country.userAgent) {
         requestHeaders.push({ header: "User-Agent", operation: "set", value: country.userAgent });
@@ -60,8 +68,12 @@ async function updateRules() {
         addRules: newRules
     });
 
-    // Also save the active timezone string so content script can query it easily
-    await chrome.storage.local.set({ _activeTimezone: country.timezone });
+    // Save active timezone so content script can query it; clear if empty to avoid stale injection
+    if (country.timezone) {
+        await chrome.storage.local.set({ _activeTimezone: country.timezone });
+    } else {
+        await chrome.storage.local.remove('_activeTimezone');
+    }
 }
 
 // Listen to storage changes

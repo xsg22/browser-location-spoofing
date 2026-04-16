@@ -66,6 +66,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 3000);
     }
 
+    // --- Populate timezone datalist ---
+    (function populateTimezones() {
+        const dl = document.getElementById('timezone-list');
+        if (!dl) return;
+        let tzList = [];
+        try {
+            tzList = Intl.supportedValuesOf('timeZone');
+        } catch (e) {
+            // Fallback common list
+            tzList = [
+                'Africa/Abidjan', 'Africa/Accra', 'Africa/Addis_Ababa', 'Africa/Algiers', 'Africa/Cairo',
+                'Africa/Casablanca', 'Africa/Johannesburg', 'Africa/Lagos', 'Africa/Nairobi', 'America/Anchorage',
+                'America/Argentina/Buenos_Aires', 'America/Bogota', 'America/Caracas', 'America/Chicago',
+                'America/Denver', 'America/Guayaquil', 'America/Jamaica', 'America/Lima', 'America/Los_Angeles',
+                'America/Mexico_City', 'America/Montreal', 'America/New_York', 'America/Phoenix', 'America/Sao_Paulo',
+                'America/Santiago', 'America/Toronto', 'Asia/Almaty', 'Asia/Baghdad', 'Asia/Baku', 'Asia/Bangkok',
+                'Asia/Beirut', 'Asia/Bishkek', 'Asia/Colombo', 'Asia/Damascus', 'Asia/Dhaka', 'Asia/Dubai',
+                'Asia/Hong_Kong', 'Asia/Jakarta', 'Asia/Jerusalem', 'Asia/Kabul', 'Asia/Karachi', 'Asia/Kathmandu',
+                'Asia/Kolkata', 'Asia/Kuala_Lumpur', 'Asia/Manila', 'Asia/Muscat', 'Asia/Nicosia', 'Asia/Phnom_Penh',
+                'Asia/Qatar', 'Asia/Riyadh', 'Asia/Seoul', 'Asia/Shanghai', 'Asia/Singapore', 'Asia/Taipei',
+                'Asia/Tashkent', 'Asia/Tehran', 'Asia/Tokyo', 'Asia/Yerevan', 'Atlantic/Reykjavik', 'Australia/Sydney',
+                'Europe/Amsterdam', 'Europe/Athens', 'Europe/Belgrade', 'Europe/Berlin', 'Europe/Brussels',
+                'Europe/Bucharest', 'Europe/Budapest', 'Europe/Copenhagen', 'Europe/Dublin', 'Europe/Helsinki',
+                'Europe/Istanbul', 'Europe/Kyiv', 'Europe/Lisbon', 'Europe/Ljubljana', 'Europe/London',
+                'Europe/Luxembourg', 'Europe/Madrid', 'Europe/Minsk', 'Europe/Monaco', 'Europe/Moscow',
+                'Europe/Oslo', 'Europe/Paris', 'Europe/Prague', 'Europe/Riga', 'Europe/Rome', 'Europe/Sarajevo',
+                'Europe/Skopje', 'Europe/Sofia', 'Europe/Stockholm', 'Europe/Tallinn', 'Europe/Tirane',
+                'Europe/Vilnius', 'Europe/Warsaw', 'Europe/Vienna', 'Europe/Zagreb', 'Europe/Zurich',
+                'Indian/Maldives', 'Indian/Mauritius', 'Pacific/Auckland', 'Pacific/Guam', 'Pacific/Honolulu', 'UTC'
+            ];
+        }
+        tzList.forEach(tz => {
+            const opt = document.createElement('option');
+            opt.value = tz;
+            dl.appendChild(opt);
+        });
+    })();
+
     async function loadData() {
         const res = await chrome.storage.local.get(['allCountries', 'visibleCountryCodes', 'pinnedCountryCodes']);
         allCountries = res.allCountries || [];
@@ -377,8 +415,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         let code = editCode.value.trim().toUpperCase();
         let ipArray = editIp.value.split(',').map(s => s.trim()).filter(Boolean);
 
-        if (!code || ipArray.length === 0) {
-            showToast("国家代码和伪装IP不能为空！", 'warning');
+        if (!code) {
+            showToast("国家代码不能为空！", 'warning');
             return;
         }
 
@@ -391,11 +429,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             name = baseName + (region ? '-' + region : '');
         }
 
-        let finalTz = editTimezone.value.trim();
-        if (!finalTz && window.inferTimezone) {
-            finalTz = window.inferTimezone(code, region);
+        let finalTz = editTimezone.value.trim() || undefined;
+        // Auto-infer timezone only when adding new node, not when user explicitly clears it during edit
+        if (!finalTz && !currentEditId && window.inferTimezone) {
+            finalTz = window.inferTimezone(code, region) || undefined;
         }
-        finalTz = finalTz || 'UTC';
 
         let userAgent = editUa.value.trim() || undefined;
 

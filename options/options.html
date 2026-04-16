@@ -132,12 +132,13 @@
                 <input type="text" id="edit-region" placeholder="如 California 等（选填）">
             </div>
             <div class="form-group">
-                <label>伪装 IP</label>
-                <input type="text" id="edit-ip">
+                <label>目标 IP (多IP用逗号隔开 / 选填)</label>
+                <input type="text" id="edit-ip" placeholder="留空则不伪装IP">
             </div>
             <div class="form-group">
-                <label>伪装时区 (与 IANA 标准一致)</label>
-                <input type="text" id="edit-timezone" placeholder="如 Europe/London">
+                <label>目标时区 (手动键入或从列表选择 / 选填)</label>
+                <input type="text" id="edit-timezone" list="timezone-list" placeholder="如 America/New_York (留空自动推导)">
+                <datalist id="timezone-list"></datalist>
             </div>
             <div class="form-group">
                 <label>覆写 User-Agent (选填)</label>

@@ -6,9 +6,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetBtn = document.getElementById('reset-btn');
     const importMsg = document.getElementById('import-msg');
 
+    const openAddModalBtn = document.getElementById('open-add-modal-btn');
     const openImportModalBtn = document.getElementById('open-import-modal-btn');
     const closeImportModalBtn = document.getElementById('close-import-modal-btn');
     const importModal = document.getElementById('import-modal');
+    const exportBtn = document.getElementById('export-btn');
 
     const toggleBatchModeBtn = document.getElementById('toggle-batch-mode-btn');
     const executeBatchDeleteBtn = document.getElementById('execute-batch-delete-btn');
@@ -17,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Modal 
     const modal = document.getElementById('edit-modal');
+    const modalTitle = document.getElementById('edit-modal-title');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const saveEditBtn = document.getElementById('save-edit-btn');
     const editCode = document.getElementById('edit-code');
@@ -287,15 +290,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // --- Edit Modal Handlers ---
+    // --- Export Logic ---
+    exportBtn.addEventListener('click', () => {
+        if (allCountries.length === 0) {
+            alert('当前没有可导出的节点数据！');
+            return;
+        }
+        // Export just the array of nodes (stripping properties that might be too internal if we want, but doing raw is fine)
+        const jsonStr = JSON.stringify(allCountries, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `location_simulator_config_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // --- Edit/Add Modal Handlers ---
+    openAddModalBtn.addEventListener('click', () => {
+        openModal(null);
+    });
+
     function openModal(country) {
-        currentEditId = country.id;
-        editCode.value = country.code;
-        editName.value = country.name;
-        editRegion.value = country.region || '';
-        editIp.value = (country.ip && Array.isArray(country.ip)) ? country.ip.join(', ') : (country.ip || '');
-        editTimezone.value = country.timezone;
-        editUa.value = country.userAgent || '';
+        if (country) {
+            modalTitle.textContent = '编辑节点信息';
+            currentEditId = country.id;
+            editCode.value = country.code;
+            editCode.disabled = true; // Disabled when editing
+            editName.value = country.name;
+            editRegion.value = country.region || '';
+            editIp.value = (country.ip && Array.isArray(country.ip)) ? country.ip.join(', ') : (country.ip || '');
+            editTimezone.value = country.timezone;
+            editUa.value = country.userAgent || '';
+        } else {
+            modalTitle.textContent = '新增国家节点';
+            currentEditId = null;
+            editCode.value = '';
+            editCode.disabled = false; // Enabled when adding
+            editName.value = '';
+            editRegion.value = '';
+            editIp.value = '';
+            editTimezone.value = '';
+            editUa.value = '';
+        }
         modal.classList.add('open');
     }
 
@@ -305,30 +346,66 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     saveEditBtn.addEventListener('click', async () => {
-        const id = currentEditId;
-        const idx = allCountries.findIndex(c => c.id === id);
-        if (idx !== -1) {
-            allCountries[idx].name = editName.value;
-            allCountries[idx].region = editRegion.value || undefined;
-            allCountries[idx].ip = editIp.value.split(',').map(s => s.trim()).filter(Boolean);
+        let code = editCode.value.trim().toUpperCase();
+        let ipArray = editIp.value.split(',').map(s => s.trim()).filter(Boolean);
 
-            let finalTz = editTimezone.value.trim();
-            if (!finalTz && window.inferTimezone) {
-                finalTz = window.inferTimezone(editCode.value, allCountries[idx].region);
-            }
-            allCountries[idx].timezone = finalTz || 'UTC';
+        if (!code || ipArray.length === 0) {
+            alert("国家代码和伪装IP不能为空！");
+            return;
+        }
 
-            if (editUa.value) {
-                allCountries[idx].userAgent = editUa.value;
-            } else {
-                delete allCountries[idx].userAgent;
+        let name = editName.value.trim();
+        let region = editRegion.value.trim() || undefined;
+
+        if (!name) {
+            const defaultCountry = COUNTRIES.find(c => c.code === code);
+            const baseName = defaultCountry ? defaultCountry.name : code;
+            name = baseName + (region ? '-' + region : '');
+        }
+
+        let finalTz = editTimezone.value.trim();
+        if (!finalTz && window.inferTimezone) {
+            finalTz = window.inferTimezone(code, region);
+        }
+        finalTz = finalTz || 'UTC';
+
+        let userAgent = editUa.value.trim() || undefined;
+
+        if (currentEditId) {
+            // Edit existing
+            const idx = allCountries.findIndex(c => c.id === currentEditId);
+            if (idx !== -1) {
+                allCountries[idx].name = name;
+                allCountries[idx].region = region;
+                allCountries[idx].ip = ipArray;
+                allCountries[idx].timezone = finalTz;
+                if (userAgent) allCountries[idx].userAgent = userAgent;
+                else delete allCountries[idx].userAgent;
+
+                await saveAllToStorage();
+                renderList();
+                modal.classList.remove('open');
+                alert(`成功更新节点`);
             }
+        } else {
+            // Add new
+            let newId = code + '_' + (region || '').replace(/\s+/g, '_') + '_' + Math.random().toString(36).substr(2, 4);
+            const newNode = {
+                id: newId,
+                code: code,
+                name: name,
+                region: region,
+                ip: ipArray,
+                timezone: finalTz,
+                userAgent: userAgent
+            };
+            allCountries.unshift(newNode);
+            if (!visibleIds.includes(newId)) visibleIds.push(newId);
 
             await saveAllToStorage();
             renderList();
             modal.classList.remove('open');
-            // Using alert toast mechanism instead of permanent text
-            alert(`成功更新节点`);
+            alert(`成功添加新节点: ${name}`);
         }
     });
 

@@ -371,6 +371,53 @@ textarea:focus {
     box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
 }
 
+/* --- Toast Notification System --- */
+.toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.toast {
+    background: white;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-left: 4px solid var(--primary);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-main);
+    pointer-events: auto;
+}
+
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast.success {
+    border-left-color: var(--success);
+}
+
+.toast.error {
+    border-left-color: var(--danger);
+}
+
+.toast.warning {
+    border-left-color: #ff9500;
+}
+
 .btn.primary:hover {
     background: var(--primary-hover);
     box-shadow: 0 6px 16px rgba(0, 102, 255, 0.35);

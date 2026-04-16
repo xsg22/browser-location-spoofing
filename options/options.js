@@ -36,6 +36,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentEditId = null;
     let isBatchMode = false;
 
+    function showToast(message, type = 'success') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+
+        let icon = '';
+        if (type === 'success') icon = '✅ ';
+        else if (type === 'error') icon = '❌ ';
+        else if (type === 'warning') icon = '⚠️ ';
+
+        toast.innerHTML = `<span style="font-size:1.1rem;">${icon}</span> <span>${message}</span>`;
+        container.appendChild(toast);
+
+        // trigger reflow
+        void toast.offsetWidth;
+        toast.classList.add('show');
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 400);
+        }, 3000);
+    }
+
     async function loadData() {
         const res = await chrome.storage.local.get(['allCountries', 'visibleCountryCodes', 'pinnedCountryCodes']);
         allCountries = res.allCountries || [];
@@ -278,22 +308,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             await saveAllToStorage();
 
-            importMsg.textContent = `成功导入/更新了 ${added} 个节点！`;
-            importMsg.className = `msg success`;
+            showToast(`成功导入/更新了 ${added} 个节点！`, 'success');
             renderList();
             setTimeout(() => {
                 importModal.classList.remove('open');
             }, 1000);
         } catch (err) {
-            importMsg.textContent = `导入失败: ${err.message}`;
-            importMsg.className = `msg error`;
+            showToast(`导入失败: ${err.message}`, 'error');
         }
     });
 
     // --- Export Logic ---
     exportBtn.addEventListener('click', () => {
         if (allCountries.length === 0) {
-            alert('当前没有可导出的节点数据！');
+            showToast('当前没有可导出的节点数据！', 'warning');
             return;
         }
         // Export just the array of nodes (stripping properties that might be too internal if we want, but doing raw is fine)
@@ -350,7 +378,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let ipArray = editIp.value.split(',').map(s => s.trim()).filter(Boolean);
 
         if (!code || ipArray.length === 0) {
-            alert("国家代码和伪装IP不能为空！");
+            showToast("国家代码和伪装IP不能为空！", 'warning');
             return;
         }
 
@@ -385,7 +413,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await saveAllToStorage();
                 renderList();
                 modal.classList.remove('open');
-                alert(`成功更新节点`);
+                showToast(`成功更新节点`, 'success');
             }
         } else {
             // Add new
@@ -405,7 +433,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveAllToStorage();
             renderList();
             modal.classList.remove('open');
-            alert(`成功添加新节点: ${name}`);
+            showToast(`成功添加新节点: ${name}`, 'success');
         }
     });
 
@@ -419,10 +447,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderList();
         }
     });
-
-    function showMessage(msg, type) {
-        // Global message handling currently relying on alert/toasts in new UI
-    }
 
     // Custom Confirm Dialog
     const confirmModal = document.getElementById('confirm-modal');
